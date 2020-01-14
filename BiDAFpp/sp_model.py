@@ -9,48 +9,67 @@ from torch.nn import init
 from torch.nn.utils import rnn
 
 class SPModel(nn.Module):
-    def __init__(self, config, word_mat, char_mat):
+    def __init__(self, word_mat, char_mat):
         super().__init__()
-        self.config = config
-        self.word_dim = config.glove_dim
+        # self.config = config
+        # self.word_dim = config.glove_dim
+        self.word_dim = 300
         self.word_emb = nn.Embedding(len(word_mat), len(word_mat[0]), padding_idx=0)
         self.word_emb.weight.data.copy_(torch.from_numpy(word_mat))
         self.word_emb.weight.requires_grad = False
         self.char_emb = nn.Embedding(len(char_mat), len(char_mat[0]), padding_idx=0)
         self.char_emb.weight.data.copy_(torch.from_numpy(char_mat))
 
-        self.char_cnn = nn.Conv1d(config.char_dim, config.char_hidden, 5)
-        self.char_hidden = config.char_hidden
-        self.hidden = config.hidden
+        # self.char_cnn = nn.Conv1d(config.char_dim, config.char_hidden, 5)
+        self.char_cnn = nn.Conv1d(8, 100, 5)
+        # self.char_hidden = config.char_hidden
+        self.char_hidden = 100
+        # self.hidden = config.hidden
+        self.hidden = 128
 
-        self.dropout = LockedDropout(1-config.keep_prob)
+        # self.dropout = LockedDropout(1-config.keep_prob)
+        self.dropout = LockedDropout(1-0.8)
 
-        self.rnn = EncoderRNN(self.word_dim + self.char_hidden + 1, config.hidden, 1, True, True, 1-config.keep_prob, False)
+        # self.rnn = EncoderRNN(self.word_dim + self.char_hidden + 1, config.hidden, 1, True, True, 1-config.keep_prob, False)
+        self.rnn = EncoderRNN(self.word_dim + self.char_hidden + 1, 128, 1, True, True, 1-0.8, False)
 
-        self.qc_att = BiAttention(config.hidden*2, 1-config.keep_prob)
+        # self.qc_att = BiAttention(config.hidden*2, 1-config.keep_prob)
+        self.qc_att = BiAttention(128*2, 1-0.8)
         self.linear_1 = nn.Sequential(
-                nn.Linear(config.hidden*6, config.hidden*2),
+                # nn.Linear(config.hidden*6, config.hidden*2),
+                nn.Linear(128*6, 128*2),
                 nn.Tanh()
             )
 
-        self.rnn_2 = EncoderRNN(config.hidden * 2, config.hidden, 1, False, True, 1-config.keep_prob, False)
-        self.self_att = BiAttention(config.hidden*2, 1-config.keep_prob)
+        # self.rnn_2 = EncoderRNN(config.hidden * 2, config.hidden, 1, False, True, 1-config.keep_prob, False)
+        self.rnn_2 = EncoderRNN(128 * 2, 128, 1, False, True, 1-0.8, False)
+        # self.self_att = BiAttention(config.hidden*2, 1-config.keep_prob)
+        self.self_att = BiAttention(128*2, 1-0.8)
         self.linear_2 = nn.Sequential(
-                nn.Linear(config.hidden*6, config.hidden*2),
+                # nn.Linear(config.hidden*6, config.hidden*2),
+                nn.Linear(128*6, 128*2),
                 nn.Tanh()
             )
 
-        self.rnn_sp = EncoderRNN(config.hidden*2, config.hidden, 1, False, True, 1-config.keep_prob, False)
-        self.linear_sp = nn.Linear(config.hidden*2, 1)
+        # self.rnn_sp = EncoderRNN(config.hidden*2, config.hidden, 1, False, True, 1-config.keep_prob, False)
+        self.rnn_sp = EncoderRNN(128*2, 128, 1, False, True, 1-0.8, False)
+        # self.linear_sp = nn.Linear(config.hidden*2, 1)
+        self.linear_sp = nn.Linear(128*2, 1)
 
-        self.rnn_start = EncoderRNN(config.hidden*4, config.hidden, 1, False, True, 1-config.keep_prob, False)
-        self.linear_start = nn.Linear(config.hidden*2, 1)
+        # self.rnn_start = EncoderRNN(config.hidden*4, config.hidden, 1, False, True, 1-config.keep_prob, False)
+        self.rnn_start = EncoderRNN(128*4, 128, 1, False, True, 1-0.8, False)
+        # self.linear_start = nn.Linear(config.hidden*2, 1)
+        self.linear_start = nn.Linear(128*2, 1)
 
-        self.rnn_end = EncoderRNN(config.hidden*4, config.hidden, 1, False, True, 1-config.keep_prob, False)
-        self.linear_end = nn.Linear(config.hidden*2, 1)
+        # self.rnn_end = EncoderRNN(config.hidden*4, config.hidden, 1, False, True, 1-config.keep_prob, False)
+        self.rnn_end = EncoderRNN(128*4, 128, 1, False, True, 1-0.8, False)
+        # self.linear_end = nn.Linear(config.hidden*2, 1)
+        self.linear_end = nn.Linear(128*2, 1)
 
-        self.rnn_type = EncoderRNN(config.hidden*4, config.hidden, 1, False, True, 1-config.keep_prob, False)
-        self.linear_type = nn.Linear(config.hidden*2, 3)
+        # self.rnn_type = EncoderRNN(config.hidden*4, config.hidden, 1, False, True, 1-config.keep_prob, False)
+        self.rnn_type = EncoderRNN(128*4, 128, 1, False, True, 1-0.8, False)
+        # self.linear_type = nn.Linear(config.hidden*2, 3)
+        self.linear_type = nn.Linear(128*2, 3)
 
         self.cache_S = 0
 

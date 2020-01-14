@@ -1,0 +1,49 @@
+OUTDIR="mine"
+QUESTION_FILE="mine/question_file.json"
+HOP1_MODEL_NAME="hop1"
+HOP2_MODEL_NAME="hop2"
+QA_MODEL_NAME="QAModel"
+DRQA_DIR="DrQA"
+EMBED_FILE="${DRQA_DIR}/data/embeddings/glove.840B.300d.txt"
+RECOMPUTE_ALL=false  # change to `true` to force recompute everything
+NUM_DRQA_WORKERS=8
+BIDAFPP_DIR="BiDAFpp"
+
+realpath() {
+    [[ $1 = /* ]] && echo "$1" || echo "$PWD/${1#./}"
+}
+
+export CLASSPATH="`realpath ${DRQA_DIR}`/data/corenlp/*:$CLASSPATH:."
+export CORENLP_HOME=`realpath stanford-corenlp-full-2018-10-05`
+export CORENLP_HOME=stanford-corenlp-full-2018-10-05
+
+HOP1_MODEL_FILE="models/$HOP1_MODEL_NAME.mdl"
+HOP2_MODEL_FILE="models/$HOP2_MODEL_NAME.mdl"
+HOP1_LABEL="data/hop1/hotpot_hop1_dev.json"
+HOP2_LABEL="data/hop2/hotpot_hop2_dev.json"
+
+CLASSPATH=DrQA/data/corenlp/*
+
+python -m scripts.e_to_e_helpers.squadify_questions $QUESTION_FILE $OUTDIR/hop1_squadified.json
+
+HOP1_PREDICTIONS="$OUTDIR/hop1_squadified-$HOP1_MODEL_NAME.preds"
+
+python ${DRQA_DIR}/scripts/reader/predict.py $OUTDIR/hop1_squadified.json --out-dir $OUTDIR --num-workers $NUM_DRQA_WORKERS --model $HOP1_MODEL_FILE
+
+python -m scripts.e_to_e_helpers.merge_with_es $OUTDIR/hop1_squadified-hop1.preds $OUTDIR/question_file.json $OUTDIR/hop2_input.json
+
+python -m scripts.preprocess_hop2 $OUTDIR hop2_input.json
+
+HOP2_PREDICTIONS="$OUTDIR/SQuAD_hop2_input-$HOP2_MODEL_NAME.preds"
+
+python ${DRQA_DIR}/scripts/reader/predict.py $OUTDIR/SQuAD_hop2_input.json --out-dir $OUTDIR --num-workers $NUM_DRQA_WORKERS --model $HOP2_MODEL_FILE
+
+python -m scripts.e_to_e_helpers.merge_with_es $OUTDIR/SQuAD_hop2_input-hop2.preds $OUTDIR/question_file.json $OUTDIR/hop2_output.json
+
+python -m scripts.e_to_e_helpers.merge_hops_results $OUTDIR/hop2_input.json $OUTDIR/hop2_output.json $OUTDIR/qa_input.json --include_queries --num_each 5
+
+python main.py --mode prepro --data_file ../mine/qa_input.json --para_limit 2250 --data_split test --fullwiki
+
+python main.py --mode test --data_split test --save QAModel --prediction_file ../mine/golden.json --sp_threshold .33 --sp_lambda 10.0 --fullwiki --hidden 128 --batch_size 16
+
+rm corenlp_server-*

@@ -284,7 +284,8 @@ def test(config):
         model = Model(config, word_mat, char_mat)
     ori_model = model.cuda() if config.cuda else model
     ori_model.load_state_dict(torch.load(os.path.join(config.save, 'model.pt'), map_location=lambda storage, loc: storage))
-    model = nn.DataParallel(ori_model)
+#    model = nn.DataParallel(ori_model)
+    model = ori_model
 
     model.eval()
     predict(build_dev_iterator(), model, dev_eval_file, config, config.prediction_file)
