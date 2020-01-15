@@ -641,4 +641,4 @@ def main(input_question):
     logger.info('最终回答为: %s', result)
     # print('用时：', time.time() - start)
 
-    return {'question': input_question, 'answer': result, 'hop1': two_hops_results[0]['hop1_query'], 'hop2': two_hops_results[0]['hop2_query'], 'hop1_document': two_hops_results[0]['context'][0][1][0] if len(two_hops_results[0]['context']) > 0 else '', 'hop2_document': two_hops_results[0]['context'][5][1][0] if len(two_hops_results[0]['context']) > 5 else ''}
+    return {'question': input_question, 'answer': result if result != '<t> some random title' else 'Sorry, I have no idea...', 'hop1': two_hops_results[0]['hop1_query'], 'hop2': two_hops_results[0]['hop2_query'], 'hop1_document': two_hops_results[0]['context'][0][1][0] if len(two_hops_results[0]['context']) > 0 else '', 'hop2_document': two_hops_results[0]['context'][5][1][0] if len(two_hops_results[0]['context']) > 5 else ''}
