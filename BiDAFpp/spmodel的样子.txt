@@ -1,0 +1,70 @@
+SPModel(
+  (word_emb): Embedding(320441, 300, padding_idx=0)
+  (char_emb): Embedding(5983, 8, padding_idx=0)
+  (char_cnn): Conv1d(8, 100, kernel_size=(5,), stride=(1,))
+  (dropout): LockedDropout()
+  (rnn): EncoderRNN(
+    (rnns): ModuleList(
+      (0): GRU(401, 128, batch_first=True, bidirectional=True)
+    )
+    (init_hidden): ParameterList(  (0): Parameter containing: [torch.FloatTensor of size 2x1x128])
+    (dropout): LockedDropout()
+  )
+  (qc_att): BiAttention(
+    (dropout): LockedDropout()
+    (input_linear): Linear(in_features=256, out_features=1, bias=False)
+    (memory_linear): Linear(in_features=256, out_features=1, bias=False)
+  )
+  (linear_1): Sequential(
+    (0): Linear(in_features=768, out_features=256, bias=True)
+    (1): Tanh()
+  )
+  (rnn_2): EncoderRNN(
+    (rnns): ModuleList(
+      (0): GRU(256, 128, batch_first=True, bidirectional=True)
+    )
+    (init_hidden): ParameterList(  (0): Parameter containing: [torch.FloatTensor of size 2x1x128])
+    (dropout): LockedDropout()
+  )
+  (self_att): BiAttention(
+    (dropout): LockedDropout()
+    (input_linear): Linear(in_features=256, out_features=1, bias=False)
+    (memory_linear): Linear(in_features=256, out_features=1, bias=False)
+  )
+  (linear_2): Sequential(
+    (0): Linear(in_features=768, out_features=256, bias=True)
+    (1): Tanh()
+  )
+  (rnn_sp): EncoderRNN(
+    (rnns): ModuleList(
+      (0): GRU(256, 128, batch_first=True, bidirectional=True)
+    )
+    (init_hidden): ParameterList(  (0): Parameter containing: [torch.FloatTensor of size 2x1x128])
+    (dropout): LockedDropout()
+  )
+  (linear_sp): Linear(in_features=256, out_features=1, bias=True)
+  (rnn_start): EncoderRNN(
+    (rnns): ModuleList(
+      (0): GRU(512, 128, batch_first=True, bidirectional=True)
+    )
+    (init_hidden): ParameterList(  (0): Parameter containing: [torch.FloatTensor of size 2x1x128])
+    (dropout): LockedDropout()
+  )
+  (linear_start): Linear(in_features=256, out_features=1, bias=True)
+  (rnn_end): EncoderRNN(
+    (rnns): ModuleList(
+      (0): GRU(512, 128, batch_first=True, bidirectional=True)
+    )
+    (init_hidden): ParameterList(  (0): Parameter containing: [torch.FloatTensor of size 2x1x128])
+    (dropout): LockedDropout()
+  )
+  (linear_end): Linear(in_features=256, out_features=1, bias=True)
+  (rnn_type): EncoderRNN(
+    (rnns): ModuleList(
+      (0): GRU(512, 128, batch_first=True, bidirectional=True)
+    )
+    (init_hidden): ParameterList(  (0): Parameter containing: [torch.FloatTensor of size 2x1x128])
+    (dropout): LockedDropout()
+  )
+  (linear_type): Linear(in_features=256, out_features=3, bias=True)
+)
