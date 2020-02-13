@@ -14,10 +14,10 @@ class SPModel(nn.Module):
         # self.config = config
         # self.word_dim = config.glove_dim
         self.word_dim = 300
-        self.word_emb = nn.Embedding(len(word_mat), len(word_mat[0]), padding_idx=0)
+        self.word_emb = nn.Embedding(len(word_mat), len(word_mat[0]), padding_idx=0) # Embedding(320441, 300, padding_idx=0)
         self.word_emb.weight.data.copy_(torch.from_numpy(word_mat))
         self.word_emb.weight.requires_grad = False
-        self.char_emb = nn.Embedding(len(char_mat), len(char_mat[0]), padding_idx=0)
+        self.char_emb = nn.Embedding(len(char_mat), len(char_mat[0]), padding_idx=0) # Embedding(5983, 8, padding_idx=0)
         self.char_emb.weight.data.copy_(torch.from_numpy(char_mat))
 
         # self.char_cnn = nn.Conv1d(config.char_dim, config.char_hidden, 5)

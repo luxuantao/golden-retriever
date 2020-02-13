@@ -635,4 +635,9 @@ if __name__ == '__main__':
         test()
         print('用时：', time.time() - start)
 
+        # 只一跳
+        # two_hops_results = merge_hops_results(merged_result1, merged_result1)
+        # prepro(data=two_hops_results)
+        # test()
+
     os.system('rm corenlp_server-*')
