@@ -28,6 +28,8 @@ from BiDAFpp.util import get_buckets, HotpotDataset, DataIterator, IGNORE_INDEX
 import shutil
 
 import logging
+from threading import Thread
+
 
 predictor1, predictor2 = None, None  # 预测模型
 word_mat, char_mat = None, None  # qa answer用
@@ -593,7 +595,7 @@ def test():
 def main(input_question):
     # input_question = "Were Scott Derrickson and Ed Wood of the same nationality?"
     # input_question = "Were Donald Trump and Barack Obama of the same nationality?"
-    start = time.time()
+    # start = time.time()
 
     question = [{"_id": "1", "question": input_question}]
     logger.info('输入问题为: %s', input_question)
@@ -640,5 +642,94 @@ def main(input_question):
     result = test()
     logger.info('最终回答为: %s', result)
     # print('用时：', time.time() - start)
+    
+    hop1_document = ''
+    for i in range(len(merged_result1[0]['json_context'])):
+        hop1_document += merged_result1[0]['json_context'][i][1][0]
+    hop2_document = ''
+    for i in range(len(merged_result2[0]['json_context'])):
+        hop2_document += merged_result2[0]['json_context'][i][1][0]
+    
+    return {'question': input_question, \
+    'answer': result if result != '<t> some random title' else 'Sorry, I have no idea...', \
+    'hop1': two_hops_results[0]['hop1_query'], \
+    'hop2': two_hops_results[0]['hop2_query'], \
+    'hop1_document': hop1_document, \
+    'hop2_document': hop2_document}
 
-    return {'question': input_question, 'answer': result if result != '<t> some random title' else 'Sorry, I have no idea...', 'hop1': two_hops_results[0]['hop1_query'], 'hop2': two_hops_results[0]['hop2_query'], 'hop1_document': two_hops_results[0]['context'][0][1][0] if len(two_hops_results[0]['context']) > 0 else '', 'hop2_document': two_hops_results[0]['context'][5][1][0] if len(two_hops_results[0]['context']) > 5 else ''}
+
+class Main(Thread):
+    def __init__(self, input_question):
+        super(Main, self).__init__()
+        self.input_question = input_question
+
+    def main(self, input_question):
+        # input_question = "Were Scott Derrickson and Ed Wood of the same nationality?"
+        # input_question = "Were Donald Trump and Barack Obama of the same nationality?"
+        # start = time.time()
+
+        question = [{"_id": "1", "question": input_question}]
+        logger.info('输入问题为: %s', input_question)
+
+        # 格式化原问题
+        squadified_question = squadify_question(question)
+        # print('用时：', time.time() - start)
+        # print(squadified_question)
+
+        # 第一次预测
+        pred1_result = make_prediction(question=squadified_question, model="models/hop1.mdl")
+        # print('用时：', time.time() - start)
+        # print('第一次查询关键词:', list(pred1_result.values())[0])
+
+        # 用第一次预测结果查询ES
+        merged_result1 = merge_with_es(query_data=pred1_result, question_data=question)
+        # print('用时：', time.time() - start)
+        # print(merged_result1)
+
+        # 格式化前面的得到的结果
+        second_input = parse_data(merged_result1)
+        # print('用时：', time.time() - start)
+        # print(second_input)
+
+        # 第二次预测
+        pred2_result = make_prediction(question=second_input, model="models/hop2.mdl")
+        # print('用时：', time.time() - start)
+        # print('第二次查询关键词:', list(pred2_result.values())[0])
+
+        # 用第二次预测结果查询ES
+        merged_result2 = merge_with_es(query_data=pred2_result, question_data=question)
+        # print('用时：', time.time() - start)
+        # print(merged_result2)
+
+        two_hops_results = merge_hops_results(merged_result1, merged_result2)
+        # print('用时：', time.time() - start)
+        # print('问答系统输入:', two_hops_results)
+
+        # python main.py --mode prepro --data_file ../mine/qa_input.json --para_limit 2250 --data_split test --fullwiki
+        prepro(data=two_hops_results)
+        # print('用时：', time.time() - start)
+
+        # python main.py --mode test --data_split test --save QAModel --prediction_file ../mine/golden.json --sp_threshold .33 --sp_lambda
+        result = test()
+        logger.info('最终回答为: %s', result)
+        # print('用时：', time.time() - start)
+        
+        hop1_document = ''
+        for i in range(len(merged_result1[0]['json_context'])):
+            hop1_document += merged_result1[0]['json_context'][i][1][0]
+        hop2_document = ''
+        for i in range(len(merged_result2[0]['json_context'])):
+            hop2_document += merged_result2[0]['json_context'][i][1][0]
+        
+        return {'question': input_question, \
+        'answer': result if result != '<t> some random title' else 'Sorry, I have no idea...', \
+        'hop1': two_hops_results[0]['hop1_query'], \
+        'hop2': two_hops_results[0]['hop2_query'], \
+        'hop1_document': hop1_document, \
+        'hop2_document': hop2_document}
+
+    def run(self):
+        self.result2 = self.main(self.input_question)
+
+    def get_result(self):
+        return self.result2
