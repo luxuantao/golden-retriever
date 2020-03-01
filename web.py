@@ -29,6 +29,7 @@ import shutil
 
 import logging
 from threading import Thread
+import requests
 
 
 predictor1, predictor2 = None, None  # 预测模型
@@ -592,6 +593,21 @@ def test():
     return predict(build_dev_iterator(), model, dev_eval_file)
 
 
+def wikidata(query):
+    try:
+        r = requests.get('https://opentapioca.org/api/annotate', params={'query': query})
+        res = r.json()
+        re = []
+        if len(res['annotations']) == 0:
+            return []
+        tags = res['annotations'][0]['tags']
+        for tag in tags:
+            re.append(tag['desc'])
+        return re
+    except Exception:
+        return []
+
+
 def main(input_question):
     # input_question = "Were Scott Derrickson and Ed Wood of the same nationality?"
     # input_question = "Were Donald Trump and Barack Obama of the same nationality?"
@@ -613,7 +629,13 @@ def main(input_question):
     # 用第一次预测结果查询ES
     merged_result1 = merge_with_es(query_data=pred1_result, question_data=question)
     # print('用时：', time.time() - start)
-    # print(merged_result1)
+
+    result1_len = len(merged_result1[0]['json_context'])
+
+    supplement1 = wikidata(list(pred1_result.values())[0])
+    for each in supplement1:
+        if each is not None:
+            merged_result1[0]['json_context'].append([each, [each]]) 
 
     # 格式化前面的得到的结果
     second_input = parse_data(merged_result1)
@@ -630,6 +652,13 @@ def main(input_question):
     # print('用时：', time.time() - start)
     # print(merged_result2)
 
+    result2_len = len(merged_result2[0]['json_context'])
+
+    supplement2 = wikidata(list(pred2_result.values())[0])
+    for each in supplement2:
+        if each is not None:
+            merged_result2[0]['json_context'].append([each, [each]])
+
     two_hops_results = merge_hops_results(merged_result1, merged_result2)
     # print('用时：', time.time() - start)
     # print('问答系统输入:', two_hops_results)
@@ -644,18 +673,32 @@ def main(input_question):
     # print('用时：', time.time() - start)
     
     hop1_document = ''
-    for i in range(len(merged_result1[0]['json_context'])):
+    for i in range(result1_len):
         hop1_document += merged_result1[0]['json_context'][i][1][0]
     hop2_document = ''
-    for i in range(len(merged_result2[0]['json_context'])):
+    for i in range(result2_len):
         hop2_document += merged_result2[0]['json_context'][i][1][0]
+
+    hop1_entity = []
+    for each in supplement1:
+        if each is not None:
+            hop1_entity.append(each) 
+    hop1_entity = " | ".join(hop1_entity)
     
+    hop2_entity = []
+    for each in supplement2:
+        if each is not None:
+            hop2_entity.append(each)
+    hop2_entity = " | ".join(hop2_entity)
+
     return {'question': input_question, \
     'answer': result if result != '<t> some random title' else 'Sorry, I have no idea...', \
     'hop1': two_hops_results[0]['hop1_query'], \
     'hop2': two_hops_results[0]['hop2_query'], \
     'hop1_document': hop1_document, \
-    'hop2_document': hop2_document}
+    'hop2_document': hop2_document,
+    'hop1_entity': hop1_entity,
+    'hop2_entity': hop2_entity}
 
 
 class Main(Thread):
