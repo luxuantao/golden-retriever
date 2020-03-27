@@ -22,6 +22,7 @@ def _single_query_constructor(query, topn=50):
                 "multi_match": {
                     "query": query,
                     "fields": ["title^1.25", "title_unescape^1.25", "text", "title_bigram^1.25", "title_unescape_bigram^1.25", "text_bigram"]
+                    # "fields": ["text", "text_bigram"]
                 }
             },
             "size": topn

@@ -31,10 +31,12 @@ import logging
 from threading import Thread
 import requests
 
+from stanfordcorenlp import StanfordCoreNLP
 
 predictor1, predictor2 = None, None  # 预测模型
 word_mat, char_mat = None, None  # qa answer用
 logger = None
+nlp = None
 
 def init():
     global logger
@@ -76,8 +78,23 @@ def init():
         char_mat = np.array(json.load(fh), dtype=np.float32)
     # print('词向量和字向量加载完毕')
 
+    global nlp
+    nlp = StanfordCoreNLP("/mnt/ssd/lxt/golden-retriever/stanford-corenlp-full-2018-10-05")
+    nlp.ner("leng qi dong")
     logger.info('初始化完毕')
 
+def nlpf(question):
+    global nlp
+    if question is None or question == "":
+        return 0
+    times = 0
+    last = 'O'
+    re = nlp.ner(question)
+    for word in re:
+        if word[1] != last:
+            times += 1
+            last = word[1]
+    return times, re
 
 def squadify_question(data):
     rows = []
