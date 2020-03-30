@@ -649,10 +649,10 @@ def main(input_question):
 
     result1_len = len(merged_result1[0]['json_context'])
 
-    supplement1 = wikidata(list(pred1_result.values())[0])
-    for each in supplement1:
-        if each is not None:
-            merged_result1[0]['json_context'].append([each, [each]]) 
+    # supplement1 = wikidata(list(pred1_result.values())[0])
+    # for each in supplement1:
+    #     if each is not None:
+    #         merged_result1[0]['json_context'].append([each, [each]]) 
 
     # 格式化前面的得到的结果
     second_input = parse_data(merged_result1)
@@ -671,10 +671,10 @@ def main(input_question):
 
     result2_len = len(merged_result2[0]['json_context'])
 
-    supplement2 = wikidata(list(pred2_result.values())[0])
-    for each in supplement2:
-        if each is not None:
-            merged_result2[0]['json_context'].append([each, [each]])
+    # supplement2 = wikidata(list(pred2_result.values())[0])
+    # for each in supplement2:
+    #     if each is not None:
+    #         merged_result2[0]['json_context'].append([each, [each]])
 
     two_hops_results = merge_hops_results(merged_result1, merged_result2)
     # print('用时：', time.time() - start)
@@ -696,17 +696,19 @@ def main(input_question):
     for i in range(result2_len):
         hop2_document += merged_result2[0]['json_context'][i][1][0]
 
-    hop1_entity = []
-    for each in supplement1:
-        if each is not None:
-            hop1_entity.append(each) 
-    hop1_entity = " | ".join(hop1_entity)
+    # hop1_entity = []
+    # for each in supplement1:
+    #     if each is not None:
+    #         hop1_entity.append(each) 
+    # hop1_entity = " | ".join(hop1_entity)
+    hop1_entity = ''
     
-    hop2_entity = []
-    for each in supplement2:
-        if each is not None:
-            hop2_entity.append(each)
-    hop2_entity = " | ".join(hop2_entity)
+    # hop2_entity = []
+    # for each in supplement2:
+    #     if each is not None:
+    #         hop2_entity.append(each)
+    # hop2_entity = " | ".join(hop2_entity)
+    hop2_entity = ''
 
     return {'question': input_question, \
     'answer': result if result != '<t> some random title' else 'Sorry, I have no idea...', \
